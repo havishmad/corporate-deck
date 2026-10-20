@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HMC Deck Viewer</title>
+<style>
+:root{
+  --bg:#0f1215; --panel:#171b20; --line:#262c33; --text:#e8ecef; --muted:#8b949e;
+  --accent:#f2a33a; --shadow:0 18px 50px rgba(0,0,0,.55);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit}
+
+/* top bar */
+.bar{flex:none;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding-right:12px;background:var(--bg)}
+.chips{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;padding:10px 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:transparent;color:var(--muted);padding:6px 12px;border-radius:999px;font-size:13px;cursor:pointer;white-space:nowrap;transition:.15s}
+.chip b{font-weight:600;opacity:.6;margin-right:6px;font-variant-numeric:tabular-nums}
+.chip:hover{color:var(--text);border-color:#3a424b}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.toggle{flex:none;display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.toggle button{border:0;background:transparent;color:var(--muted);width:36px;height:32px;cursor:pointer;display:grid;place-items:center}
+.toggle button.on{background:#232930;color:var(--text)}
+.toggle svg,.ib svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.view{flex:1;min-height:0;display:none}
+.view.on{display:flex}
+
+/* ---------- slide view (default) ---------- */
+#slideView{gap:16px;padding:16px}
+.hero{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+.heroImg{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center}
+.heroImg img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;box-shadow:var(--shadow);cursor:zoom-in;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+@media (hover:hover){.heroImg img:hover{transform:scale(1.015)}}
+.heroBar{flex:none;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+.heroBar .meta{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.heroBar .meta strong{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;margin-right:8px}
+.ib{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer;display:grid;place-items:center;flex:none}
+.ib:hover{background:#1d2228}
+
+.rail{flex:none;width:270px;overflow-y:auto;padding:2px 6px 2px 2px;scrollbar-width:thin;scrollbar-color:#2c333b transparent}
+.rail h3{margin:14px 2px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.rail h3:first-child{margin-top:0}
+.ri{display:block;width:100%;aspect-ratio:16/9;margin:0 0 10px;padding:0;border:2px solid transparent;border-radius:6px;overflow:hidden;background:var(--panel);cursor:pointer;position:relative;opacity:.72;transition:opacity .15s,transform .2s,border-color .15s}
+.ri img{width:100%;height:100%;object-fit:cover;display:block}
+.ri .n{position:absolute;left:5px;bottom:5px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;padding:1px 6px;border-radius:4px}
+.ri:hover{opacity:1;transform:scale(1.03)}
+.ri.on{opacity:1;border-color:var(--accent)}
+
+@media (max-width:760px){
+  #slideView{flex-direction:column;padding:10px;gap:10px}
+  .rail{width:auto;height:96px;flex:none;display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:0}
+  .rail h3{display:none}
+  .ri{flex:none;width:150px;height:auto;margin:0}
+}
+
+/* ---------- grid view ---------- */
+#gridView{display:none;overflow-y:auto}
+#gridView.on{display:block}
+.gwrap{padding:8px 16px 64px;max-width:1680px;margin:0 auto}
+section{scroll-margin-top:10px;padding-top:24px}
+h2{margin:0 0 14px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:baseline;gap:10px}
+h2 span{color:var(--text);letter-spacing:.06em}
+h2 small{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+@media (max-width:560px){.grid{grid-template-columns:repeat(2,1fr);gap:10px}}
+.card{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:var(--panel);cursor:zoom-in;border:0;padding:0;transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s;outline:none}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card .n{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;padding:2px 7px;border-radius:4px}
+@media (hover:hover){.card:hover,.card:focus-visible{transform:scale(1.14);z-index:5;box-shadow:var(--shadow)}}
+
+/* ---------- full-screen viewer ---------- */
+.lb{position:fixed;inset:0;z-index:50;background:#06080a;display:none;flex-direction:column}
+.lb.open{display:flex}
+.top{display:flex;align-items:center;gap:10px;padding:10px 14px;color:var(--muted);font-size:13px}
+.top .meta{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .meta strong{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;margin-right:8px}
+.stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0 64px 16px}
+@media (max-width:700px){.stage{padding:0 8px 8px}}
+.stage img{max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;cursor:zoom-in;transition:transform .18s ease;user-select:none;-webkit-user-drag:none}
+.stage.zoomed img{cursor:zoom-out}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(23,27,32,.85);color:var(--text);cursor:pointer;display:grid;place-items:center}
+.nav:hover{background:#252b32}
+.nav svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.prev{left:10px}.next{right:10px}
+@media (max-width:700px){.nav{display:none}}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <nav class="chips" id="chips"></nav>
+  <div class="toggle">
+    <button id="vSlide" class="on" title="Slide view"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="M20 6v12"/></svg></button>
+    <button id="vGrid" title="Thumbnail view"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
+  </div>
+</div>
+
+<div class="view on" id="slideView">
+  <div class="hero">
+    <div class="heroImg"><img id="heroImg" alt="" title="Click to view full screen"></div>
+    <div class="heroBar">
+      <div class="meta" id="heroMeta"></div>
+      <button class="ib" id="hPrev" title="Previous (←)"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button class="ib" id="hNext" title="Next (→)"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="ib" id="hFull" title="Full screen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </div>
+  </div>
+  <div class="rail" id="rail"></div>
+</div>
+
+<div class="view" id="gridView"><div class="gwrap" id="gwrap"></div></div>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Slide viewer">
+  <div class="top">
+    <div class="meta" id="meta"></div>
+    <button class="ib" id="fsBtn" title="Browser full screen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button class="ib" id="closeBtn" title="Close (Esc)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="stage" id="stage">
+    <img id="big" alt="">
+    <button class="nav prev" id="prevBtn" title="Previous (←)"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <button class="nav next" id="nextBtn" title="Next (→)"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+  </div>
+</div>
+
+<script>
+const SECTIONS = [{"name": "Introduction", "from": 1, "to": 2}, {"name": "Clients & Academia", "from": 3, "to": 5}, {"name": "Why HMC ONE", "from": 6, "to": 11}, {"name": "Adoption Roadmap", "from": 12, "to": 13}, {"name": "Capability Programs", "from": 14, "to": 19}, {"name": "Roadmap in Practice", "from": 20, "to": 35}, {"name": "Capabilities", "from": 36, "to": 53}, {"name": "Customer Stories", "from": 54, "to": 65}, {"name": "Team & Content", "from": 66, "to": 69}];
+const N = 69;
+const tsrc = i => "thumbs/p-" + String(i+1).padStart(2,"0") + ".jpg";
+const fsrc = i => "slides/p-" + String(i+1).padStart(2,"0") + ".jpg";
+const secOf = i => SECTIONS.findIndex(s => i+1 >= s.from && i+1 <= s.to);
+const pad = n => String(n).padStart(2, "0");
+const $ = id => document.getElementById(id);
+
+let cur = 0, mode = "slide", zoomed = false;
+
+/* ---- build chips, rail, grid ---- */
+const chips = $("chips"), rail = $("rail"), gwrap = $("gwrap");
+SECTIONS.forEach((s, si) => {
+  const c = document.createElement("button");
+  c.className = "chip"; c.innerHTML = `<b>${pad(si+1)}</b>${s.name}`;
+  c.onclick = () => mode === "slide" ? go(s.from - 1) : $("s"+si).scrollIntoView({behavior:"smooth"});
+  chips.appendChild(c);
+
+  const h = document.createElement("h3"); h.textContent = s.name; rail.appendChild(h);
+
+  const sec = document.createElement("section"); sec.id = "s"+si; sec.dataset.s = si;
+  sec.innerHTML = `<h2>${pad(si+1)} <span>${s.name}</span> <small>${s.from===s.to?"Page "+s.from:"Pages "+s.from+"–"+s.to}</small></h2><div class="grid"></div>`;
+  const g = sec.querySelector(".grid");
+  for (let p = s.from; p <= s.to; p++) {
+    const r = document.createElement("button");
+    r.className = "ri"; r.dataset.i = p-1;
+    r.innerHTML = `<img loading="lazy" src="${tsrc(p-1)}" alt="Page ${p}"><span class="n">${p}</span>`;
+    r.onclick = () => go(p-1);
+    rail.appendChild(r);
+
+    const b = document.createElement("button");
+    b.className = "card";
+    b.innerHTML = `<img loading="lazy" src="${tsrc(p-1)}" alt="Page ${p}"><span class="n">${p}</span>`;
+    b.onclick = () => openLB(p-1);
+    g.appendChild(b);
+  }
+  gwrap.appendChild(sec);
+});
+const chipEls = [...chips.children], railItems = [...rail.querySelectorAll(".ri")];
+function markChip(si){
+  chipEls.forEach((c, k) => c.classList.toggle("on", k === si));
+  chipEls[si] && chipEls[si].scrollIntoView({block:"nearest", inline:"nearest"});
+}
+
+/* ---- slide view ---- */
+function go(i){
+  cur = (i + N) % N;
+  $("heroImg").src = fsrc(cur); $("heroImg").alt = "Page " + (cur+1);
+  const si = secOf(cur);
+  $("heroMeta").innerHTML = `<strong>${cur+1} / ${N}</strong>${SECTIONS[si].name}`;
+  railItems.forEach(r => r.classList.toggle("on", +r.dataset.i === cur));
+  const on = railItems[cur];
+  const rr = rail.getBoundingClientRect(), or = on.getBoundingClientRect();
+  if (matchMedia("(max-width:760px)").matches)
+    rail.scrollTo({left: rail.scrollLeft + or.left - rr.left - 4, behavior:"smooth"});
+  else {
+    /* keep the section label above the current slide visible when it starts a section */
+    const prev = on.previousElementSibling, lift = prev && prev.tagName === "H3" ? prev.offsetHeight + 14 : 4;
+    rail.scrollTo({top: rail.scrollTop + or.top - rr.top - lift, behavior:"smooth"});
+  }
+  if (mode === "slide") markChip(si);
+  if (cur+1 < N) { const im = new Image(); im.src = fsrc(cur+1); }
+}
+$("hPrev").onclick = () => go(cur-1);
+$("hNext").onclick = () => go(cur+1);
+$("hFull").onclick = () => openLB(cur);
+$("heroImg").onclick = () => openLB(cur);
+
+/* ---- view toggle ---- */
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting && mode === "grid") markChip(+e.target.dataset.s);
+}), {root: $("gridView"), rootMargin:"-40% 0px -55% 0px"});
+document.querySelectorAll("section").forEach(s => io.observe(s));
+
+function setMode(m){
+  mode = m;
+  $("slideView").classList.toggle("on", m === "slide");
+  $("gridView").classList.toggle("on", m === "grid");
+  $("vSlide").classList.toggle("on", m === "slide");
+  $("vGrid").classList.toggle("on", m === "grid");
+  if (m === "slide") go(cur);
+  else { const si = secOf(cur); $("s"+si).scrollIntoView(); markChip(si); }
+}
+$("vSlide").onclick = () => setMode("slide");
+$("vGrid").onclick = () => setMode("grid");
+
+/* ---- full-screen viewer ---- */
+const lb = $("lb"), big = $("big"), stage = $("stage");
+let lcur = 0;
+function setZoom(z, e){
+  zoomed = z; stage.classList.toggle("zoomed", z);
+  if (!z) { big.style.transform = ""; return; }
+  pan(e); big.style.transform = "scale(2.2)";
+}
+function pan(e){
+  if (!zoomed || !e) return;
+  const r = big.getBoundingClientRect();
+  const x = Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100));
+  const y = Math.max(0, Math.min(100, (e.clientY - r.top) / r.height * 100));
+  big.style.transformOrigin = `${x}% ${y}%`;
+}
+function show(i){
+  lcur = (i + N) % N; setZoom(false);
+  big.src = fsrc(lcur); big.alt = "Page " + (lcur+1);
+  $("meta").innerHTML = `<strong>${lcur+1} / ${N}</strong>${SECTIONS[secOf(lcur)].name}`;
+  if (lcur+1 < N) { const im = new Image(); im.src = fsrc(lcur+1); }
+}
+function openLB(i){ lb.classList.add("open"); show(i); }
+function closeLB(){
+  if (document.fullscreenElement) document.exitFullscreen();
+  lb.classList.remove("open");
+  go(lcur);  /* slide view picks up where the viewer left off */
+}
+function toggleFS(){
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (lb.requestFullscreen) lb.requestFullscreen().catch(() => {});
+}
+$("prevBtn").onclick = () => show(lcur-1);
+$("nextBtn").onclick = () => show(lcur+1);
+$("closeBtn").onclick = closeLB;
+$("fsBtn").onclick = toggleFS;
+if (!document.fullscreenEnabled) $("fsBtn").style.display = "none";
+big.addEventListener("click", e => setZoom(!zoomed, e));
+big.addEventListener("mousemove", pan);
+stage.addEventListener("click", e => { if (e.target === stage) closeLB(); });
+
+/* ---- keys & swipe ---- */
+document.addEventListener("keydown", e => {
+  const inLB = lb.classList.contains("open");
+  const step = d => inLB ? show(lcur + d) : (mode === "slide" && go(cur + d));
+  if (["ArrowRight","ArrowDown","PageDown"].includes(e.key)) { e.preventDefault(); step(1); }
+  else if (["ArrowLeft","ArrowUp","PageUp"].includes(e.key)) { e.preventDefault(); step(-1); }
+  else if (e.key === "Escape" && inLB && !document.fullscreenElement) closeLB();
+  else if ((e.key === "f" || e.key === "F") && inLB) toggleFS();
+  else if (e.key === "Enter" && !inLB && mode === "slide") openLB(cur);
+});
+function swipe(el, fn){
+  let x = null, y = null;
+  el.addEventListener("touchstart", e => { x = e.touches[0].clientX; y = e.touches[0].clientY; }, {passive:true});
+  el.addEventListener("touchend", e => {
+    if (x === null || zoomed) return;
+    const dx = e.changedTouches[0].clientX - x, dy = e.changedTouches[0].clientY - y;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) fn(dx < 0 ? 1 : -1);
+    x = null;
+  });
+}
+swipe(stage, d => show(lcur + d));
+swipe(document.querySelector(".heroImg"), d => go(cur + d));
+
+go(0);
+</script>
+</body>
+</html>
