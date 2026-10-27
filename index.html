@@ -129,8 +129,8 @@ h2 small{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px}
 </div>
 
 <script>
-const SECTIONS = [{"name": "Introduction", "from": 1, "to": 2}, {"name": "Clients & Academia", "from": 3, "to": 5}, {"name": "Why HMC ONE", "from": 6, "to": 11}, {"name": "Adoption Roadmap", "from": 12, "to": 13}, {"name": "Capability Programs", "from": 14, "to": 19}, {"name": "Roadmap in Practice", "from": 20, "to": 35}, {"name": "Capabilities", "from": 36, "to": 53}, {"name": "Customer Stories", "from": 54, "to": 65}, {"name": "Team & Content", "from": 66, "to": 69}];
-const N = 69;
+const SECTIONS = [{"name": "Introduction", "from": 1, "to": 2}, {"name": "Clients & Academia", "from": 3, "to": 5}, {"name": "Why HMC ONE", "from": 6, "to": 11}, {"name": "Adoption Roadmap", "from": 12, "to": 13}, {"name": "Capability Programs", "from": 14, "to": 24}, {"name": "Roadmap in Practice", "from": 25, "to": 40}, {"name": "Capabilities", "from": 41, "to": 58}, {"name": "Customer Stories", "from": 59, "to": 61}, {"name": "Team & Content", "from": 62, "to": 65}];
+const N = 65;
 const tsrc = i => "thumbs/p-" + String(i+1).padStart(2,"0") + ".jpg";
 const fsrc = i => "slides/p-" + String(i+1).padStart(2,"0") + ".jpg";
 const secOf = i => SECTIONS.findIndex(s => i+1 >= s.from && i+1 <= s.to);
